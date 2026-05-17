@@ -1,0 +1,19 @@
+[project]
+name = "astk"
+version = "0.1.0"
+description = "A股全栈数据CLI工具 — 6层数据架构21个端点"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "akshare>=1.18.60",
+    "mootdx>=0.11.7",
+    "pandas>=3.0.3",
+    "requests>=2.34.2",
+    "stockstats>=0.6.8",
+    "wencai>=0.2.6",
+    "typer>=0.16.0",
+    "rich>=15.0.0",
+]
+
+[project.scripts]
+astk = "astk.cli:app"
