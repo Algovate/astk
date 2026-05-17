@@ -5,7 +5,13 @@ from __future__ import annotations
 from datetime import date as _date
 
 import pandas as pd
-import requests
+
+from astk.utils.http import http_get
+
+_HOT_HEADERS = {
+    "Host": "zx.10jqka.com.cn",
+    "Referer": "https://zx.10jqka.com.cn/",
+}
 
 
 def get_hot_stocks(date_str: str | None = None) -> pd.DataFrame:
@@ -17,16 +23,10 @@ def get_hot_stocks(date_str: str | None = None) -> pd.DataFrame:
         date_str = _date.today().strftime("%Y-%m-%d")
 
     url = (
-        f"http://zx.10jqka.com.cn/event/api/getharden/"
+        f"https://zx.10jqka.com.cn/event/api/getharden/"
         f"date/{date_str}/orderby/date/orderway/desc/charset/GBK/"
     )
-    headers = {
-        "User-Agent": (
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-            "Chrome/117.0.0.0 Safari/537.36"
-        )
-    }
-    r = requests.get(url, headers=headers, timeout=10)
+    r = http_get(url, headers=_HOT_HEADERS, timeout=10)
     data = r.json()
     if data.get("errocode", 0) != 0:
         raise RuntimeError(f"同花顺热点错误: {data.get('errormsg', '')}")

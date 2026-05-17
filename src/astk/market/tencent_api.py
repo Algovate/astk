@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-import urllib.request
+from astk.utils.http import http_get
 
 
 def tencent_quote(codes: list[str]) -> dict[str, dict]:
@@ -21,10 +21,8 @@ def tencent_quote(codes: list[str]) -> dict[str, dict]:
             prefixed.append(f"sz{c}")
 
     url = "https://qt.gtimg.cn/q=" + ",".join(prefixed)
-    req = urllib.request.Request(url)
-    req.add_header("User-Agent", "Mozilla/5.0")
-    resp = urllib.request.urlopen(req, timeout=10)
-    data = resp.read().decode("gbk")
+    r = http_get(url, timeout=10)
+    data = r.content.decode("gbk")
 
     result: dict[str, dict] = {}
     for line in data.strip().split(";"):

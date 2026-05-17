@@ -3,12 +3,13 @@
 from __future__ import annotations
 
 import pandas as pd
-from mootdx.quotes import Quotes
+
+from astk.market.mootdx_api import _client
 
 
 def get_finance_snapshot(symbol: str) -> pd.DataFrame:
     """获取37字段季报快照."""
-    client = Quotes.factory(market="std")
+    client = _client()
     df = client.finance(symbol=symbol)
     if df is None or df.empty:
         return pd.DataFrame()

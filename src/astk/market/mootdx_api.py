@@ -2,12 +2,15 @@
 
 from __future__ import annotations
 
+import functools
+
 import pandas as pd
 from mootdx.quotes import Quotes
 
 from astk.utils.code import get_mootdx_market
 
 
+@functools.lru_cache(maxsize=1)
 def _client() -> Quotes:
     return Quotes.factory(market="std")
 

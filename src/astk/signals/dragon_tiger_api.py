@@ -2,10 +2,16 @@
 
 from __future__ import annotations
 
+import logging
 from datetime import datetime, timedelta
 
 import akshare as ak
-import requests
+
+from astk.utils.http import http_get
+
+logger = logging.getLogger(__name__)
+
+_DC_HEADERS = {"Referer": "https://data.eastmoney.com/"}
 
 
 def get_dragon_tiger(code: str, trade_date: str, look_back: int = 30) -> dict:
@@ -30,8 +36,8 @@ def get_dragon_tiger(code: str, trade_date: str, look_back: int = 30) -> dict:
                     "net_buy": row.get("龙虎榜净买额", 0),
                     "turnover": row.get("换手率", 0),
                 })
-    except Exception:
-        pass
+    except Exception as e:
+        logger.warning("龙虎榜上榜记录获取失败: %s", e)
 
     # 2. 买卖席位
     seats: dict[str, list[dict]] = {"buy": [], "sell": []}
@@ -48,8 +54,8 @@ def get_dragon_tiger(code: str, trade_date: str, look_back: int = 30) -> dict:
                             "sell_amt": row.get("卖出额", 0),
                             "net": row.get("净额", 0),
                         })
-            except Exception:
-                pass
+            except Exception as e:
+                logger.warning("龙虎榜席位数据获取失败 (%s): %s", flag, e)
 
     # 3. 机构统计
     institution: dict = {}
@@ -62,8 +68,8 @@ def get_dragon_tiger(code: str, trade_date: str, look_back: int = 30) -> dict:
                 "sell_count": row.get("卖出机构数", 0),
                 "net_amount": row.get("机构净买入额", 0),
             }
-    except Exception:
-        pass
+    except Exception as e:
+        logger.warning("龙虎榜机构统计获取失败: %s", e)
 
     return {"records": records, "seats": seats, "institution": institution}
 
@@ -85,11 +91,7 @@ def get_daily_dragon_tiger(trade_date: str, min_net_buy: float | None = None) ->
         "source": "WEB",
         "client": "WEB",
     }
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36",
-        "Referer": "https://data.eastmoney.com/",
-    }
-    r = requests.get(url, params=params, headers=headers, timeout=15)
+    r = http_get(url, params=params, headers=_DC_HEADERS, timeout=15)
     d = r.json()
     if not d.get("success") or not d.get("result") or not d["result"].get("data"):
         return {

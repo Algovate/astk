@@ -3,25 +3,25 @@
 from __future__ import annotations
 
 import math
-import urllib.request
 
 import akshare as ak
+
+from astk.market.tencent_api import tencent_quote
+from astk.utils.errors import DataSourceError
 
 
 def full_valuation(code: str) -> dict:
     """单票完整估值分析."""
     # 1. 腾讯实时行情
-    prefix = "sh" if code.startswith(("6", "9")) else ("bj" if code.startswith("8") else "sz")
-    url = f"https://qt.gtimg.cn/q={prefix}{code}"
-    req = urllib.request.Request(url)
-    req.add_header("User-Agent", "Mozilla/5.0")
-    resp = urllib.request.urlopen(req, timeout=10)
-    data = resp.read().decode("gbk")
-    vals = data.split('"')[1].split("~")
-    price = float(vals[3])
-    mcap = float(vals[44])
-    pe_ttm = float(vals[39]) if vals[39] else 0
-    pb = float(vals[46]) if vals[46] else 0
+    quotes = tencent_quote([code])
+    if code not in quotes:
+        raise DataSourceError(f"腾讯行情数据未返回: {code}")
+    q = quotes[code]
+    price = q["price"]
+    mcap = q["mcap_yi"]
+    pe_ttm = q["pe_ttm"]
+    pb = q["pb"]
+    name = q["name"]
 
     # 2. 机构一致预期
     df = ak.stock_profit_forecast_ths(symbol=code, indicator="预测年报每股收益")
@@ -37,8 +37,8 @@ def full_valuation(code: str) -> dict:
             eps_next = float(row["均值"])
 
     # 3. 估值指标
-    pe_fwd = price / eps_cur if eps_cur else float("inf")
-    cagr = (eps_next / eps_cur - 1) if (eps_cur and eps_next) else 0
+    pe_fwd = price / eps_cur if eps_cur and eps_cur > 0 else float("inf")
+    cagr = (eps_next / eps_cur - 1) if (eps_cur and eps_cur > 0 and eps_next) else 0
     peg = pe_fwd / (cagr * 100) if cagr > 0 else float("inf")
     digest = (
         math.log(pe_fwd / 30) / math.log(1 + cagr)
@@ -46,7 +46,7 @@ def full_valuation(code: str) -> dict:
     )
 
     return {
-        "name": vals[1],
+        "name": name,
         "code": code,
         "price": price,
         "mcap_yi": mcap,

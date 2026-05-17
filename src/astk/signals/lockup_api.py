@@ -2,7 +2,11 @@
 
 from __future__ import annotations
 
+import logging
+
 import akshare as ak
+
+logger = logging.getLogger(__name__)
 
 
 def get_lockup_expiry(code: str, trade_date: str, forward_days: int = 90) -> dict:
@@ -23,8 +27,8 @@ def get_lockup_expiry(code: str, trade_date: str, forward_days: int = 90) -> dic
                     "shares": row.get("解禁数量", 0),
                     "ratio": row.get("实际解禁市值占总市值比例", 0),
                 })
-    except Exception:
-        pass
+    except Exception as e:
+        logger.warning("历史解禁数据获取失败: %s", e)
 
     # 2. 未来待解禁
     upcoming: list[dict] = []
@@ -40,7 +44,7 @@ def get_lockup_expiry(code: str, trade_date: str, forward_days: int = 90) -> dic
                     "shares": row.get("解禁数量", 0),
                     "float_ratio": row.get("占流通股比例", 0),
                 })
-    except Exception:
-        pass
+    except Exception as e:
+        logger.warning("待解禁数据获取失败: %s", e)
 
     return {"history": history, "upcoming": upcoming}

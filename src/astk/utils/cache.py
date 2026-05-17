@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import csv
+import io
+import tempfile
 from pathlib import Path
 
 import pandas as pd
@@ -20,7 +23,11 @@ def northbound_cache_path() -> Path:
 
 
 def save_northbound_snapshot(date: str, hgt: float, sgt: float) -> None:
-    """Write/update a day's northbound closing data to CSV cache."""
+    """Write/update a day's northbound closing data to CSV cache.
+
+    Uses atomic write (write to temp, then rename) to avoid data loss
+    from concurrent processes.
+    """
     path = northbound_cache_path()
     rows: dict[str, str] = {}
     if path.exists():
@@ -29,10 +36,16 @@ def save_northbound_snapshot(date: str, hgt: float, sgt: float) -> None:
             if len(parts) == 3:
                 rows[parts[0]] = line
     rows[date] = f"{date},{hgt},{sgt}"
-    with open(path, "w") as f:
-        f.write("date,hgt_yi,sgt_yi\n")
-        for d in sorted(rows.keys()):
-            f.write(rows[d] + "\n")
+
+    buf = io.StringIO()
+    writer = csv.writer(buf)
+    writer.writerow(["date", "hgt_yi", "sgt_yi"])
+    for d in sorted(rows.keys()):
+        writer.writerow(rows[d].split(","))
+
+    tmp = path.with_suffix(".tmp")
+    tmp.write_text(buf.getvalue())
+    tmp.replace(path)
 
 
 def load_northbound_history(n: int = 20) -> pd.DataFrame:

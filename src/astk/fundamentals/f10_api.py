@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from mootdx.quotes import Quotes
+from astk.market.mootdx_api import _client
 
 
 CATEGORIES = [
@@ -14,7 +14,7 @@ CATEGORIES = [
 
 def get_f10(symbol: str, name: str) -> str | None:
     """获取指定类别的F10文本数据."""
-    client = Quotes.factory(market="std")
+    client = _client()
     text = client.F10(symbol=symbol, name=name)
     if not text:
         return None

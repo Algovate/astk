@@ -2,11 +2,10 @@
 
 from __future__ import annotations
 
-import requests
+from astk.utils.http import http_get
 
-_BAIDU_PAE_HEADERS = {
+_BAIDU_HEADERS = {
     "Host": "finance.pae.baidu.com",
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/117.0.0.0",
     "Accept": "application/vnd.finance-web.v1+json",
     "Origin": "https://gushitong.baidu.com",
     "Referer": "https://gushitong.baidu.com/",
@@ -20,7 +19,7 @@ def get_concept_blocks(code: str) -> dict:
         f"?code={code}&market=ab"
         f"&typeCode=all&finClientType=pc"
     )
-    r = requests.get(url, headers=_BAIDU_PAE_HEADERS, timeout=10)
+    r = http_get(url, headers=_BAIDU_HEADERS, timeout=10)
     d = r.json()
     if str(d.get("ResultCode", -1)) != "0":
         raise RuntimeError(f"百度PAE错误: {d}")
@@ -54,7 +53,7 @@ def get_fund_flow_realtime(code: str, date: str) -> list[dict]:
         f"?code={code}&market=ab&date={date}"
         f"&finClientType=pc"
     )
-    r = requests.get(url, headers=_BAIDU_PAE_HEADERS, timeout=10)
+    r = http_get(url, headers=_BAIDU_HEADERS, timeout=10)
     d = r.json()
     if str(d.get("ResultCode", -1)) != "0":
         return []
@@ -85,7 +84,7 @@ def get_fund_flow_history(code: str, days: int = 20) -> list[dict]:
         f"?code={code}&market=ab&pn=0&rn={days}"
         f"&finClientType=pc"
     )
-    r = requests.get(url, headers=_BAIDU_PAE_HEADERS, timeout=10)
+    r = http_get(url, headers=_BAIDU_HEADERS, timeout=10)
     d = r.json()
     if str(d.get("ResultCode", -1)) != "0":
         return []

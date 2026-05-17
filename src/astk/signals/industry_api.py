@@ -9,8 +9,16 @@ import akshare as ak
 
 def get_industry_comparison(top_n: int = 20) -> dict:
     """全行业涨跌幅排名（同花顺~90个行业）."""
+    prev = os.environ.get("TQDM_DISABLE", "")
     os.environ["TQDM_DISABLE"] = "1"
-    df = ak.stock_board_industry_summary_ths()
+    try:
+        df = ak.stock_board_industry_summary_ths()
+    finally:
+        if prev:
+            os.environ["TQDM_DISABLE"] = prev
+        else:
+            os.environ.pop("TQDM_DISABLE", None)
+
     if df.empty:
         return {"top": [], "bottom": [], "total": 0}
 

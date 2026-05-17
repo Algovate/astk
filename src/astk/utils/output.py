@@ -22,7 +22,7 @@ class OutputFormat(str, Enum):
 
 def _is_single_dict(data: Any) -> bool:
     """Check if data is a single dict (not a list of dicts)."""
-    return isinstance(data, dict) and not isinstance(data, list)
+    return isinstance(data, dict)
 
 
 def _to_records(data: Any) -> list[dict]:
@@ -58,6 +58,13 @@ def _render_json(data: Any) -> None:
     print(json.dumps(data, ensure_ascii=False, indent=2, default=str))
 
 
+def _sanitize_csv_value(v: str) -> str:
+    """Prevent CSV injection by prefixing dangerous leading chars."""
+    if v and v[0] in ("=", "+", "-", "@", "\t", "\r"):
+        return f"'{v}"
+    return v
+
+
 def _render_csv(data: Any) -> None:
     """Render as CSV to stdout."""
     records = _to_records(data)
@@ -66,7 +73,7 @@ def _render_csv(data: Any) -> None:
     writer = csv.DictWriter(sys.stdout, fieldnames=records[0].keys())
     writer.writeheader()
     for row in records:
-        writer.writerow({k: str(v) for k, v in row.items()})
+        writer.writerow({k: _sanitize_csv_value(str(v)) for k, v in row.items()})
 
 
 def _render_table(

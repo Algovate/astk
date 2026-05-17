@@ -5,7 +5,7 @@ from __future__ import annotations
 import os
 import secrets
 
-import requests
+from astk.utils.http import http_post
 
 IWENCAI_BASE = os.environ.get("IWENCAI_BASE_URL", "https://openapi.iwencai.com")
 IWENCAI_KEY = os.environ.get("IWENCAI_API_KEY", "")
@@ -36,9 +36,9 @@ def iwencai_search(query: str, channel: str = "report", size: int = 50) -> list[
         "query": query,
         "size": size,
     }
-    r = requests.post(
+    r = http_post(
         f"{IWENCAI_BASE}/v1/comprehensive/search",
-        json=payload, headers=headers, timeout=30,
+        headers=headers, json=payload, timeout=30,
     )
     if r.status_code != 200:
         raise RuntimeError(f"iwencai HTTP {r.status_code}: {r.text[:200]}")
