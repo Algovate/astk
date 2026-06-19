@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from astk.utils.code import get_prefix
 from astk.utils.http import http_get
 
 
@@ -11,14 +12,7 @@ def tencent_quote(codes: list[str]) -> dict[str, dict]:
     codes: ["688017", "300476", "002463"]
     返回: {code: {name, price, pe_ttm, pb, mcap_yi, ...}}
     """
-    prefixed = []
-    for c in codes:
-        if c.startswith(("6", "9")):
-            prefixed.append(f"sh{c}")
-        elif c.startswith("8"):
-            prefixed.append(f"bj{c}")
-        else:
-            prefixed.append(f"sz{c}")
+    prefixed = [f"{get_prefix(c)}{c}" for c in codes]
 
     url = "https://qt.gtimg.cn/q=" + ",".join(prefixed)
     r = http_get(url, timeout=10)

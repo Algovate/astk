@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import functools
+import os
 import time
 from typing import Callable
 
@@ -47,6 +48,10 @@ def handle_errors(func: Callable) -> Callable:
             except InvalidStockCodeError as e:
                 stderr.print(f"[red]错误:[/red] {e}")
                 raise SystemExit(1)
+            except ValueError as e:
+                # Bad user input (e.g. malformed --date). Not retried.
+                stderr.print(f"[red]错误:[/red] {e}")
+                raise SystemExit(1)
             except DataUnavailableError as e:
                 stderr.print(f"[yellow]无数据:[/yellow] {e}")
                 raise SystemExit(0)
@@ -65,6 +70,8 @@ def handle_errors(func: Callable) -> Callable:
                 stderr.print(f"[red]网络错误:[/red] {e}")
                 raise SystemExit(1)
             except Exception as e:
+                if os.environ.get("ASTK_DEBUG"):
+                    raise
                 stderr.print(f"[red]未预期错误:[/red] {e}")
                 raise SystemExit(1)
 

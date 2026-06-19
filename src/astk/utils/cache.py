@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import csv
 import io
-import tempfile
 from pathlib import Path
 
 import pandas as pd
@@ -29,19 +28,24 @@ def save_northbound_snapshot(date: str, hgt: float, sgt: float) -> None:
     from concurrent processes.
     """
     path = northbound_cache_path()
-    rows: dict[str, str] = {}
+    rows: dict[str, list[str]] = {}
     if path.exists():
-        for line in path.read_text().strip().split("\n")[1:]:
-            parts = line.split(",")
-            if len(parts) == 3:
-                rows[parts[0]] = line
-    rows[date] = f"{date},{hgt},{sgt}"
+        with path.open(newline="") as f:
+            reader = csv.reader(f)
+            try:
+                next(reader)  # skip header
+            except StopIteration:
+                pass
+            for parts in reader:
+                if len(parts) == 3:
+                    rows[parts[0]] = parts
+    rows[date] = [date, str(hgt), str(sgt)]
 
     buf = io.StringIO()
     writer = csv.writer(buf)
     writer.writerow(["date", "hgt_yi", "sgt_yi"])
     for d in sorted(rows.keys()):
-        writer.writerow(rows[d].split(","))
+        writer.writerow(rows[d])
 
     tmp = path.with_suffix(".tmp")
     tmp.write_text(buf.getvalue())

@@ -130,3 +130,37 @@ class TestHandleErrors:
         with pytest.raises(SystemExit) as exc_info:
             fn()
         assert exc_info.value.code == 1
+
+    def test_value_error_treated_as_user_input(self):
+        @handle_errors
+        def fn():
+            raise ValueError("bad date")
+        with pytest.raises(SystemExit) as exc_info:
+            fn()
+        assert exc_info.value.code == 1
+
+    @patch("astk.utils.errors.os")
+    def test_debug_env_reraises(self, mock_os):
+        mock_os.environ.get.return_value = "1"
+        caught = False
+
+        @handle_errors
+        def fn():
+            raise RuntimeError("boom")
+
+        try:
+            fn()
+        except RuntimeError:
+            caught = True
+        assert caught
+
+    @patch("astk.utils.errors.os")
+    def test_no_debug_swallows(self, mock_os):
+        mock_os.environ.get.return_value = ""
+
+        @handle_errors
+        def fn():
+            raise RuntimeError("boom")
+
+        with pytest.raises(SystemExit):
+            fn()

@@ -8,7 +8,6 @@ import secrets
 from astk.utils.http import http_post
 
 IWENCAI_BASE = os.environ.get("IWENCAI_BASE_URL", "https://openapi.iwencai.com")
-IWENCAI_KEY = os.environ.get("IWENCAI_API_KEY", "")
 
 
 def _claw_headers(call_type: str = "normal") -> dict:
@@ -25,8 +24,10 @@ def _claw_headers(call_type: str = "normal") -> dict:
 
 def iwencai_search(query: str, channel: str = "report", size: int = 50) -> list[dict]:
     """iwencai 语义搜索."""
+    # Read at call time so env changes (and the CLI presence check) stay in sync.
+    key = os.environ.get("IWENCAI_API_KEY", "")
     headers = {
-        "Authorization": f"Bearer {IWENCAI_KEY}",
+        "Authorization": f"Bearer {key}",
         "Content-Type": "application/json",
         **_claw_headers(),
     }

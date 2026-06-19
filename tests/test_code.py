@@ -10,7 +10,9 @@ from astk.utils.code import (
     get_prefix,
     normalize_code,
     validate_code,
+    validate_date,
 )
+from astk.utils.errors import InvalidStockCodeError
 
 
 # ── normalize_code ───────────────────────────────────────────
@@ -109,17 +111,50 @@ class TestValidateCode:
         assert validate_code("688017.SH") == "688017"
 
     def test_invalid_letters(self):
-        with pytest.raises(ValueError, match="无效股票代码"):
+        with pytest.raises(InvalidStockCodeError, match="无效股票代码"):
             validate_code("abc")
 
     def test_invalid_short(self):
-        with pytest.raises(ValueError, match="无效股票代码"):
+        with pytest.raises(InvalidStockCodeError, match="无效股票代码"):
             validate_code("123")
 
     def test_invalid_empty(self):
-        with pytest.raises(ValueError, match="无效股票代码"):
+        with pytest.raises(InvalidStockCodeError, match="无效股票代码"):
             validate_code("")
 
     def test_invalid_too_long(self):
-        with pytest.raises(ValueError, match="无效股票代码"):
+        with pytest.raises(InvalidStockCodeError, match="无效股票代码"):
             validate_code("1234567")
+
+    def test_raises_specific_exception(self):
+        # Tightens: must be InvalidStockCodeError, not a bare ValueError
+        with pytest.raises(InvalidStockCodeError):
+            validate_code("abc")
+        assert not issubclass(InvalidStockCodeError, ValueError)
+
+
+# ── validate_date ────────────────────────────────────────────
+
+
+class TestValidateDate:
+    def test_valid_iso(self):
+        assert validate_date("2025-01-15") == "2025-01-15"
+
+    def test_valid_pads(self):
+        assert validate_date("2025-12-31") == "2025-12-31"
+
+    def test_invalid_month(self):
+        with pytest.raises(ValueError, match="无效日期"):
+            validate_date("2025-13-01")
+
+    def test_invalid_day(self):
+        with pytest.raises(ValueError, match="无效日期"):
+            validate_date("2025-01-32")
+
+    def test_invalid_format(self):
+        with pytest.raises(ValueError, match="无效日期"):
+            validate_date("20250115")
+
+    def test_invalid_garbage(self):
+        with pytest.raises(ValueError, match="无效日期"):
+            validate_date("not-a-date")

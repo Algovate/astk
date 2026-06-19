@@ -2,12 +2,16 @@
 
 from __future__ import annotations
 
+import logging
 import math
 
 import akshare as ak
+import pandas as pd
 
 from astk.market.tencent_api import tencent_quote
 from astk.utils.errors import DataSourceError
+
+logger = logging.getLogger(__name__)
 
 
 def full_valuation(code: str) -> dict:
@@ -23,18 +27,26 @@ def full_valuation(code: str) -> dict:
     pb = q["pb"]
     name = q["name"]
 
-    # 2. 机构一致预期
-    df = ak.stock_profit_forecast_ths(symbol=code, indicator="预测年报每股收益")
+    # 2. 机构一致预期 (may be absent for stocks with no analyst coverage)
     eps_cur = eps_next = None
     analyst_count = 0
-    years_sorted = sorted(df["年度"].unique())
-    for _, row in df.iterrows():
-        y = str(row["年度"])
-        if len(years_sorted) > 0 and y == str(years_sorted[0]):
-            eps_cur = float(row["均值"])
-            analyst_count = int(row["预测机构数"])
-        elif len(years_sorted) > 1 and y == str(years_sorted[1]):
-            eps_next = float(row["均值"])
+    try:
+        df = ak.stock_profit_forecast_ths(symbol=code, indicator="预测年报每股收益")
+        if not df.empty and "年度" in df.columns and "均值" in df.columns:
+            # Coerce year to numeric and sort, so we don't depend on dtype
+            # (iterrows would upcast int years to float and break the match).
+            ydf = df.copy()
+            ydf["_year"] = pd.to_numeric(ydf["年度"], errors="coerce")
+            ydf = ydf.dropna(subset=["_year"]).sort_values("_year")
+            if len(ydf) >= 1:
+                first = ydf.iloc[0]
+                eps_cur = float(first["均值"])
+                if "预测机构数" in ydf.columns:
+                    analyst_count = int(first["预测机构数"])
+            if len(ydf) >= 2:
+                eps_next = float(ydf.iloc[1]["均值"])
+    except Exception as e:
+        logger.warning("机构盈利预测获取失败 (%s): %s", code, e)
 
     # 3. 估值指标
     pe_fwd = price / eps_cur if eps_cur and eps_cur > 0 else float("inf")

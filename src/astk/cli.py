@@ -5,10 +5,13 @@ from __future__ import annotations
 from typing import Annotated, Optional
 
 import typer
+from rich.console import Console
 
 from astk import __version__
 from astk.utils.decorators import _get_output, astk_command
 from astk.utils.output import OutputFormat
+
+_console = Console()
 
 app = typer.Typer(
     name="astk",
@@ -135,10 +138,12 @@ def ticks(
 ):
     """逐笔成交."""
     from astk.market.mootdx_api import get_ticks
-    from astk.utils.code import validate_code
+    from astk.utils.code import validate_code, validate_date
     from astk.utils.output import render
 
     c = validate_code(code)
+    if date_str:
+        validate_date(date_str)
     d = date_str.replace("-", "") if date_str else None
     df = get_ticks(c, date=d)
     render(df, _get_output(ctx), title=f"{code} 逐笔成交")
@@ -188,15 +193,13 @@ def report_download(
 
     c = validate_code(code)
     records = eastmoney_reports(c, max_pages=2)
-    from rich.console import Console
-    console = Console()
     for r in records[:limit]:
         path = download_pdf(r, target_dir=target_dir)
         if path:
-            console.print(f"[green]✓[/green] {path}")
+            _console.print(f"[green]✓[/green] {path}")
         else:
-            console.print(f"[yellow]✗[/yellow] {r.get('title', '')[:50]}")
-    console.print(f"完成，共处理 {min(limit, len(records))} 篇")
+            _console.print(f"[yellow]✗[/yellow] {r.get('title', '')[:50]}")
+    _console.print(f"完成，共处理 {min(limit, len(records))} 篇")
 
 
 @app.command()
@@ -377,8 +380,11 @@ def hot(
 ):
     """同花顺强势股 + 题材归因."""
     from astk.signals.hot_api import get_hot_stocks
+    from astk.utils.code import validate_date
     from astk.utils.output import render
 
+    if date_str:
+        validate_date(date_str)
     df = get_hot_stocks(date_str)
     cols = ["代码", "名称", "涨幅%", "换手率%", "题材归因"]
     cols = [c for c in cols if c in df.columns]
@@ -473,10 +479,12 @@ def dragon_tiger(
     from datetime import date as _date
 
     from astk.signals.dragon_tiger_api import get_dragon_tiger
-    from astk.utils.code import validate_code
+    from astk.utils.code import validate_code, validate_date
     from astk.utils.output import render
 
     c = validate_code(code)
+    if date_str:
+        validate_date(date_str)
     d = date_str or _date.today().strftime("%Y-%m-%d")
     data = get_dragon_tiger(c, trade_date=d, look_back=lookback)
     fmt = _get_output(ctx)
@@ -498,8 +506,11 @@ def dragon_tiger_all(
     from datetime import date as _date
 
     from astk.signals.dragon_tiger_api import get_daily_dragon_tiger
+    from astk.utils.code import validate_date
     from astk.utils.output import render
 
+    if date_str:
+        validate_date(date_str)
     d = date_str or _date.today().strftime("%Y-%m-%d")
     data = get_daily_dragon_tiger(d, min_net_buy=min_net_buy)
     render(data["stocks"], _get_output(ctx), title=f"龙虎榜 {data['date']} ({data['total_records']}条)")
@@ -517,10 +528,12 @@ def lockup(
     from datetime import date as _date
 
     from astk.signals.lockup_api import get_lockup_expiry
-    from astk.utils.code import validate_code
+    from astk.utils.code import validate_code, validate_date
     from astk.utils.output import render
 
     c = validate_code(code)
+    if date_str:
+        validate_date(date_str)
     d = date_str or _date.today().strftime("%Y-%m-%d")
     data = get_lockup_expiry(c, trade_date=d, forward_days=forward)
     fmt = _get_output(ctx)

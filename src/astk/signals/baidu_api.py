@@ -2,7 +2,11 @@
 
 from __future__ import annotations
 
+import logging
+
 from astk.utils.http import http_get
+
+logger = logging.getLogger(__name__)
 
 _BAIDU_HEADERS = {
     "Host": "finance.pae.baidu.com",
@@ -22,7 +26,8 @@ def get_concept_blocks(code: str) -> dict:
     r = http_get(url, headers=_BAIDU_HEADERS, timeout=10)
     d = r.json()
     if str(d.get("ResultCode", -1)) != "0":
-        raise RuntimeError(f"百度PAE错误: {d}")
+        logger.warning("百度PAE错误 (code=%s): %s", code, d)
+        raise RuntimeError(f"百度PAE错误 (ResultCode={d.get('ResultCode')}, code={code})")
 
     result: dict[str, list] = {"industry": [], "concept": [], "region": [], "concept_tags": []}
     for block in d.get("Result", []):

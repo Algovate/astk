@@ -4,12 +4,12 @@ from __future__ import annotations
 
 import pandas as pd
 
-from astk.market.mootdx_api import _client
+from astk.market.mootdx_api import get_client
 
 
 def get_finance_snapshot(symbol: str) -> pd.DataFrame:
     """获取37字段季报快照."""
-    client = _client()
+    client = get_client()
     df = client.finance(symbol=symbol)
     if df is None or df.empty:
         return pd.DataFrame()

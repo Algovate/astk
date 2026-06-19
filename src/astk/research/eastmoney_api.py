@@ -6,7 +6,7 @@ import re
 import time
 from pathlib import Path
 
-from astk.utils.http import get_session
+from astk.utils.http import get_session, http_get
 
 REPORT_API = "https://reportapi.eastmoney.com/report/list"
 PDF_TPL = "https://pdf.dfcfw.com/pdf/H3_{info_code}_1.pdf"
@@ -15,7 +15,6 @@ _EM_HEADERS = {"Referer": "https://data.eastmoney.com/"}
 
 def eastmoney_reports(code: str, max_pages: int = 5) -> list[dict]:
     """拉取指定股票的研报列表."""
-    session = get_session()
     all_records: list[dict] = []
     for page in range(1, max_pages + 1):
         params = {
@@ -26,7 +25,7 @@ def eastmoney_reports(code: str, max_pages: int = 5) -> list[dict]:
             "orgCode": "", "code": code, "rcode": "",
             "p": str(page), "pageNum": str(page), "pageNumber": str(page),
         }
-        r = session.get(REPORT_API, params=params, headers=_EM_HEADERS, timeout=30)
+        r = http_get(REPORT_API, params=params, headers=_EM_HEADERS, timeout=30)
         d = r.json()
         rows = d.get("data") or []
         if not rows:

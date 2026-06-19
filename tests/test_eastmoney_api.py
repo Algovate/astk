@@ -20,11 +20,9 @@ REPORT_RECORD = {
 
 class TestEastmoneyReports:
     @patch("astk.research.eastmoney_api.time.sleep")
-    @patch("astk.research.eastmoney_api.get_session")
-    def test_single_page(self, mock_gs, mock_sleep):
-        session = MagicMock()
-        mock_gs.return_value = session
-        session.get.return_value.json.return_value = {
+    @patch("astk.research.eastmoney_api.http_get")
+    def test_single_page(self, mock_get, mock_sleep):
+        mock_get.return_value.json.return_value = {
             "data": [REPORT_RECORD],
             "TotalPage": 1,
         }
@@ -34,12 +32,10 @@ class TestEastmoneyReports:
         assert result[0]["infoCode"] == "AN202501151234"
 
     @patch("astk.research.eastmoney_api.time.sleep")
-    @patch("astk.research.eastmoney_api.get_session")
-    def test_multi_page(self, mock_gs, mock_sleep):
-        session = MagicMock()
-        mock_gs.return_value = session
+    @patch("astk.research.eastmoney_api.http_get")
+    def test_multi_page(self, mock_get, mock_sleep):
         rec2 = {**REPORT_RECORD, "infoCode": "AN202501151235"}
-        session.get.return_value.json.side_effect = [
+        mock_get.return_value.json.side_effect = [
             {"data": [REPORT_RECORD], "TotalPage": 2},
             {"data": [rec2], "TotalPage": 2},
         ]
@@ -47,11 +43,9 @@ class TestEastmoneyReports:
         result = eastmoney_reports("688017", max_pages=5)
         assert len(result) == 2
 
-    @patch("astk.research.eastmoney_api.get_session")
-    def test_empty(self, mock_gs):
-        session = MagicMock()
-        mock_gs.return_value = session
-        session.get.return_value.json.return_value = {"data": []}
+    @patch("astk.research.eastmoney_api.http_get")
+    def test_empty(self, mock_get):
+        mock_get.return_value.json.return_value = {"data": []}
 
         result = eastmoney_reports("688017")
         assert result == []

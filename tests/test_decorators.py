@@ -65,7 +65,5 @@ class TestAstkCommand:
         def my_cmd():
             return 42
 
-        # astk_command wraps in handle_errors which calls _run() that returns 42
-        # but the wrapper doesn't return it — just calls _run()
-        # This is fine since CLI commands use side effects (render), not returns
-        my_cmd()  # should not raise
+        # wrapper now returns _run()'s value (fixes previously-dropped return)
+        assert my_cmd() == 42

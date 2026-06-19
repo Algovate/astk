@@ -30,6 +30,6 @@ def astk_command(func: Callable) -> Callable:
         @handle_errors
         def _run():
             return func(*args, **kwargs)
-        _run()
+        return _run()
 
     return wrapper

@@ -1,6 +1,9 @@
 """Stock code normalization and validation."""
 
 import re
+from datetime import datetime
+
+from astk.utils.errors import InvalidStockCodeError
 
 
 def normalize_code(raw: str) -> str:
@@ -44,8 +47,21 @@ def get_cninfo_market(code: str) -> str:
 
 
 def validate_code(raw: str) -> str:
-    """Normalize and validate stock code. Raises ValueError on failure."""
+    """Normalize and validate stock code. Raises InvalidStockCodeError on failure."""
     code = normalize_code(raw)
     if not re.match(r"^\d{6}$", code):
-        raise ValueError(f"无效股票代码: {raw!r} (需要6位数字，如 688017)")
+        raise InvalidStockCodeError(f"无效股票代码: {raw!r} (需要6位数字，如 688017)")
     return code
+
+
+def validate_date(raw: str, fmt: str = "%Y-%m-%d") -> str:
+    """Validate a date string format. Raises ValueError on failure.
+
+    Returns the input string unchanged on success.
+    """
+    try:
+        datetime.strptime(raw, fmt)
+    except (ValueError, TypeError) as e:
+        hint = fmt.replace("%Y", "YYYY").replace("%m", "MM").replace("%d", "DD")
+        raise ValueError(f"无效日期: {raw!r} (需要 {hint} 格式，如 2025-01-15)") from e
+    return raw
