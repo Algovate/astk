@@ -12,7 +12,7 @@ from astk.utils.code import (
     validate_code,
     validate_date,
 )
-from astk.utils.errors import InvalidStockCodeError
+from astk.utils.errors import InvalidDateError, InvalidStockCodeError
 
 
 # ── normalize_code ───────────────────────────────────────────
@@ -144,17 +144,22 @@ class TestValidateDate:
         assert validate_date("2025-12-31") == "2025-12-31"
 
     def test_invalid_month(self):
-        with pytest.raises(ValueError, match="无效日期"):
+        with pytest.raises(InvalidDateError, match="无效日期"):
             validate_date("2025-13-01")
 
     def test_invalid_day(self):
-        with pytest.raises(ValueError, match="无效日期"):
+        with pytest.raises(InvalidDateError, match="无效日期"):
             validate_date("2025-01-32")
 
     def test_invalid_format(self):
-        with pytest.raises(ValueError, match="无效日期"):
+        with pytest.raises(InvalidDateError, match="无效日期"):
             validate_date("20250115")
 
+    @pytest.mark.parametrize("raw", ["2025-1-01", "2025-01-1", "2025-1-1"])
+    def test_requires_zero_padding(self, raw):
+        with pytest.raises(InvalidDateError, match="无效日期"):
+            validate_date(raw)
+
     def test_invalid_garbage(self):
-        with pytest.raises(ValueError, match="无效日期"):
+        with pytest.raises(InvalidDateError, match="无效日期"):
             validate_date("not-a-date")

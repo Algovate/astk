@@ -3,7 +3,7 @@
 import re
 from datetime import datetime
 
-from astk.utils.errors import InvalidStockCodeError
+from astk.utils.errors import InvalidDateError, InvalidStockCodeError
 
 
 def normalize_code(raw: str) -> str:
@@ -55,13 +55,15 @@ def validate_code(raw: str) -> str:
 
 
 def validate_date(raw: str, fmt: str = "%Y-%m-%d") -> str:
-    """Validate a date string format. Raises ValueError on failure.
+    """Validate an exact date string format. Raises InvalidDateError on failure.
 
     Returns the input string unchanged on success.
     """
     try:
-        datetime.strptime(raw, fmt)
+        parsed = datetime.strptime(raw, fmt)
+        if parsed.strftime(fmt) != raw:
+            raise ValueError("date does not exactly match format")
     except (ValueError, TypeError) as e:
         hint = fmt.replace("%Y", "YYYY").replace("%m", "MM").replace("%d", "DD")
-        raise ValueError(f"无效日期: {raw!r} (需要 {hint} 格式，如 2025-01-15)") from e
+        raise InvalidDateError(f"无效日期: {raw!r} (需要 {hint} 格式，如 2025-01-15)") from e
     return raw

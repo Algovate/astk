@@ -5,12 +5,14 @@ from __future__ import annotations
 from unittest.mock import patch
 
 import pytest
+import requests
 
 from astk.utils.errors import (
     AStockError,
     AuthenticationError,
     DataUnavailableError,
     DataSourceError,
+    InvalidDateError,
     InvalidStockCodeError,
     NetworkTimeoutError,
     handle_errors,
@@ -23,7 +25,14 @@ from astk.utils.errors import (
 class TestExceptionHierarchy:
     @pytest.mark.parametrize(
         "exc_cls",
-        [InvalidStockCodeError, DataUnavailableError, NetworkTimeoutError, AuthenticationError, DataSourceError],
+        [
+            InvalidStockCodeError,
+            InvalidDateError,
+            DataUnavailableError,
+            NetworkTimeoutError,
+            AuthenticationError,
+            DataSourceError,
+        ],
     )
     def test_inherits_from_base(self, exc_cls):
         assert issubclass(exc_cls, AStockError)
@@ -131,13 +140,29 @@ class TestHandleErrors:
             fn()
         assert exc_info.value.code == 1
 
-    def test_value_error_treated_as_user_input(self):
+    def test_invalid_date_treated_as_user_input(self):
         @handle_errors
         def fn():
-            raise ValueError("bad date")
+            raise InvalidDateError("bad date")
         with pytest.raises(SystemExit) as exc_info:
             fn()
         assert exc_info.value.code == 1
+
+    @patch("astk.utils.errors.time.sleep")
+    def test_json_decode_error_uses_network_retry_path(self, mock_sleep):
+        call_count = 0
+
+        @handle_errors
+        def fn():
+            nonlocal call_count
+            call_count += 1
+            raise requests.exceptions.JSONDecodeError("bad json", "", 0)
+
+        with pytest.raises(SystemExit) as exc_info:
+            fn()
+        assert exc_info.value.code == 1
+        assert call_count == 3
+        assert mock_sleep.call_count == 2
 
     @patch("astk.utils.errors.os")
     def test_debug_env_reraises(self, mock_os):

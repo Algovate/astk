@@ -20,6 +20,10 @@ class InvalidStockCodeError(AStockError):
     """Bad stock code format."""
 
 
+class InvalidDateError(AStockError):
+    """Bad date format or value."""
+
+
 class DataUnavailableError(AStockError):
     """No data returned (non-trading day, empty response)."""
 
@@ -45,11 +49,7 @@ def handle_errors(func: Callable) -> Callable:
         for attempt in range(max_retries):
             try:
                 return func(*args, **kwargs)
-            except InvalidStockCodeError as e:
-                stderr.print(f"[red]错误:[/red] {e}")
-                raise SystemExit(1)
-            except ValueError as e:
-                # Bad user input (e.g. malformed --date). Not retried.
+            except (InvalidStockCodeError, InvalidDateError) as e:
                 stderr.print(f"[red]错误:[/red] {e}")
                 raise SystemExit(1)
             except DataUnavailableError as e:
